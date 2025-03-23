@@ -14,7 +14,7 @@ struct Transaction {
 class BudgetTracker {
 private:
     map<string, double> budgets;
-    map<string, vector<Transaction>> transactions;
+    map<string, vector<Transaction> > transactions;
 
 public:
     BudgetTracker() {}
@@ -31,8 +31,8 @@ public:
             return;
         }
         budgets[category] += amount;
-        cout << "$" << fixed << setprecision(2) << amount << " added to " << category 
-             << ". New total: $" << budgets[category] << endl;
+        cout << "$" << fixed << setprecision(2) << amount << " added to " << category
+            << ". New total: $" << budgets[category] << endl;
     }
 
     void addExpense(const string& category, double amount, const string& description = "") {
@@ -42,20 +42,25 @@ public:
         }
 
         double spent = 0.0;
-        for (const auto& trans : transactions[category]) {
-            spent += trans.amount;
+        vector<Transaction> transList = transactions[category];
+        for (size_t i = 0; i < transList.size(); i++) {
+            spent += transList[i].amount;
         }
         double remaining = budgets[category] - spent;
 
         if (amount > remaining) {
-            cout << "Warning: This expense ($" << fixed << setprecision(2) << amount 
-                 << ") exceeds remaining budget ($" << remaining << ") for " << category << endl;
-        } else {
-            cout << "Expense of $" << fixed << setprecision(2) << amount 
-                 << " added to " << category << endl;
+            cout << "Warning: This expense ($" << fixed << setprecision(2) << amount
+                << ") exceeds remaining budget ($" << remaining << ") for " << category << endl;
+        }
+        else {
+            cout << "Expense of $" << fixed << setprecision(2) << amount
+                << " added to " << category << endl;
         }
 
-        transactions[category].push_back({amount, description});
+        Transaction newTrans;
+        newTrans.amount = amount;
+        newTrans.description = description;
+        transactions[category].push_back(newTrans);
     }
 
     void viewBudget(const string& category) {
@@ -66,8 +71,9 @@ public:
 
         double initial = budgets[category];
         double spent = 0.0;
-        for (const auto& trans : transactions[category]) {
-            spent += trans.amount;
+        vector<Transaction> transList = transactions[category];
+        for (size_t i = 0; i < transList.size(); i++) {
+            spent += transList[i].amount;
         }
         double remaining = initial - spent;
 
@@ -76,14 +82,14 @@ public:
         cout << "Total Spent: $" << spent << endl;
         cout << "Remaining: $" << remaining << endl;
 
-        if (!transactions[category].empty()) {
+        if (!transList.empty()) {
             cout << "\nTransactions:" << endl;
-            for (size_t i = 0; i < transactions[category].size(); i++) {
-                string desc = transactions[category][i].description.empty() 
+            for (size_t i = 0; i < transList.size(); i++) {
+                string desc = transList[i].description.empty()
                     ? "Transaction " + to_string(i + 1)
-                    : transactions[category][i].description;
-                cout << i + 1 << ". $" << fixed << setprecision(2) 
-                     << transactions[category][i].amount << " - " << desc << endl;
+                    : transList[i].description;
+                cout << i + 1 << ". $" << fixed << setprecision(2)
+                    << transList[i].amount << " - " << desc << endl;
             }
         }
     }
@@ -95,14 +101,18 @@ public:
         }
 
         cout << "\nAll Budgets Summary:" << endl;
-        for (const auto& [category, initial] : budgets) {
+        map<string, double>::iterator it;
+        for (it = budgets.begin(); it != budgets.end(); ++it) {
+            string category = it->first;
+            double initial = it->second;
             double spent = 0.0;
-            for (const auto& trans : transactions[category]) {
-                spent += trans.amount;
+            vector<Transaction> transList = transactions[category];
+            for (size_t i = 0; i < transList.size(); i++) {
+                spent += transList[i].amount;
             }
             double remaining = initial - spent;
-            cout << category << ": Current: $" << fixed << setprecision(2) << initial 
-                 << " | Spent: $" << spent << " | Remaining: $" << remaining << endl;
+            cout << category << ": Current: $" << fixed << setprecision(2) << initial
+                << " | Spent: $" << spent << " | Remaining: $" << remaining << endl;
         }
     }
 };
@@ -111,23 +121,22 @@ int main() {
     BudgetTracker tracker;
 
     // Your specific budget categories with initial amounts
-    vector<pair<string, double>> categories = {
-        {"Social Budget", 4002.97},
-        {"Brotherhood", 3334.66},
-        {"House Budget", 2872.26},
-        {"Recruitment", 2601.12},
-        {"New Member Education", 1174.84},
-        {"Savings", 234.37},
-        {"IFC Expenses", 3000.00},
-        {"Historian", 423.50},
-        {"Philanthropy", 100.00},
-        {"Scholarship", 100.00},
-        {"Parent & Alumni", 100.00}
-    };
+    vector<pair<string, double> > categories;
+    categories.push_back(pair<string, double>("Social Budget", 4002.97));
+    categories.push_back(pair<string, double>("Brotherhood", 3334.66));
+    categories.push_back(pair<string, double>("House Budget", 2872.26));
+    categories.push_back(pair<string, double>("Recruitment", 2601.12));
+    categories.push_back(pair<string, double>("New Member Education", 1174.84));
+    categories.push_back(pair<string, double>("Savings", 234.37));
+    categories.push_back(pair<string, double>("IFC Expenses", 3000.00));
+    categories.push_back(pair<string, double>("Historian", 423.50));
+    categories.push_back(pair<string, double>("Philanthropy", 100.00));
+    categories.push_back(pair<string, double>("Scholarship", 100.00));
+    categories.push_back(pair<string, double>("Parent & Alumni", 100.00));
 
     // Initialize budgets
-    for (const auto& [category, amount] : categories) {
-        tracker.setBudget(category, amount);
+    for (size_t i = 0; i < categories.size(); i++) {
+        tracker.setBudget(categories[i].first, categories[i].second);
     }
 
     while (true) {
@@ -141,7 +150,7 @@ int main() {
         int choice;
         cout << "Enter your choice (1-5): ";
         cin >> choice;
-        cin.ignore(); // Clear buffer
+        cin.ignore();
 
         if (choice == 1) {
             cout << "\nAvailable categories:" << endl;
@@ -165,11 +174,12 @@ int main() {
                 getline(cin, desc);
 
                 tracker.addExpense(category, amount, desc);
-            } else {
+            }
+            else {
                 cout << "Invalid category number" << endl;
             }
-
-        } else if (choice == 2) {
+        }
+        else if (choice == 2) {
             cout << "\nAvailable categories:" << endl;
             for (size_t i = 0; i < categories.size(); i++) {
                 cout << i + 1 << ". " << categories[i].first << endl;
@@ -187,11 +197,12 @@ int main() {
                 cin.ignore();
 
                 tracker.addFunds(category, amount);
-            } else {
+            }
+            else {
                 cout << "Invalid category number" << endl;
             }
-
-        } else if (choice == 3) {
+        }
+        else if (choice == 3) {
             cout << "\nAvailable categories:" << endl;
             for (size_t i = 0; i < categories.size(); i++) {
                 cout << i + 1 << ". " << categories[i].first << endl;
@@ -203,18 +214,19 @@ int main() {
 
             if (catNum >= 1 && catNum <= static_cast<int>(categories.size())) {
                 tracker.viewBudget(categories[catNum - 1].first);
-            } else {
+            }
+            else {
                 cout << "Invalid category number" << endl;
             }
-
-        } else if (choice == 4) {
+        }
+        else if (choice == 4) {
             tracker.viewAllBudgets();
-
-        } else if (choice == 5) {
+        }
+        else if (choice == 5) {
             cout << "Goodbye!" << endl;
             break;
-
-        } else {
+        }
+        else {
             cout << "Invalid choice. Please try again." << endl;
         }
     }
