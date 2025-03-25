@@ -16,3 +16,9 @@ application/logs/*
 !application/logs/index.html
 !application/logs/.htaccess
 /vendor/
+
+#out folder
+build/
+
+#vscode config files
+.vscode/
