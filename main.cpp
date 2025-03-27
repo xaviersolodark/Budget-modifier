@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <iomanip>
+#include <fstream>
 
 using namespace std;
 
@@ -115,12 +116,68 @@ public:
                 << " | Spent: $" << spent << " | Remaining: $" << remaining << endl;
         }
     }
+
+    bool isEmpty() const {
+        return budgets.empty();
+    }
+
+    void loadFromFile(const string& filename) {
+        ifstream inFile(filename);
+        if (inFile.is_open()) {
+            budgets.clear();
+            transactions.clear();
+
+            string category;
+            double budget;
+            int numTransactions;
+
+            while (inFile >> ws && getline(inFile, category, '|')) {
+                inFile >> budget >> numTransactions;
+                inFile.ignore();
+
+                budgets[category] = budget;
+                vector<Transaction>& transList = transactions[category];
+
+                for (int i = 0; i < numTransactions; i++) {
+                    Transaction t;
+                    inFile >> t.amount;
+                    inFile.ignore();
+                    getline(inFile, t.description);
+                    transList.push_back(t);
+                }
+            }
+            inFile.close();
+            cout << "Data loaded from " << filename << endl;
+        }
+    }
+
+    void saveToFile(const string& filename) {
+        ofstream outFile(filename);
+        if (outFile.is_open()) {
+            for (const auto& budget : budgets) {
+                string category = budget.first;
+                double amount = budget.second;
+                vector<Transaction>& transList = transactions[category];
+
+                outFile << category << "|" << fixed << setprecision(2) << amount << " "
+                    << transList.size() << "\n";
+
+                for (const auto& trans : transList) {
+                    outFile << trans.amount << "\n" << trans.description << "\n";
+                }
+            }
+            outFile.close();
+            cout << "Data saved to " << filename << endl;
+        }
+        else {
+            cout << "Unable to save to file " << filename << endl;
+        }
+    }
 };
 
 int main() {
     BudgetTracker tracker;
-
-    // Your specific budget categories with initial amounts
+    const string filename = "budget_data.txt";
     vector<pair<string, double> > categories;
     categories.push_back(pair<string, double>("Social Budget", 4002.97));
     categories.push_back(pair<string, double>("Brotherhood", 3334.66));
@@ -134,9 +191,12 @@ int main() {
     categories.push_back(pair<string, double>("Scholarship", 100.00));
     categories.push_back(pair<string, double>("Parent & Alumni", 100.00));
 
-    // Initialize budgets
-    for (size_t i = 0; i < categories.size(); i++) {
-        tracker.setBudget(categories[i].first, categories[i].second);
+    tracker.loadFromFile(filename);
+
+    if (tracker.isEmpty()) {
+        for (size_t i = 0; i < categories.size(); i++) {
+            tracker.setBudget(categories[i].first, categories[i].second);
+        }
     }
 
     while (true) {
@@ -223,6 +283,7 @@ int main() {
             tracker.viewAllBudgets();
         }
         else if (choice == 5) {
+            tracker.saveToFile(filename);
             cout << "Goodbye!" << endl;
             break;
         }
